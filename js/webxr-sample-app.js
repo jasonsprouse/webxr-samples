@@ -32,7 +32,8 @@ export class WebXRSampleApp {
       inline: 'inline' in options ? options.inline : true,
       immersiveMode: options.immersiveMode || 'immersive-vr',
       referenceSpace: options.referenceSpace || 'local',
-      defaultInputHandling: 'defaultInputHandling' in options ? options.defaultInputHandling : true
+      defaultInputHandling: 'defaultInputHandling' in options ? options.defaultInputHandling : true,
+      useMultiview: options.useMultiview || false
     };
 
     this.gl = null;
@@ -121,9 +122,11 @@ export class WebXRSampleApp {
     return navigator.xr.requestSession(this.options.immersiveMode, {
         requiredFeatures: [this.options.referenceSpace]
     }).then((session) => {
-      this.xrButton.setSession(session);
-      session.isImmersive = true;
-      this.onSessionStarted(session);
+      this.gl.makeXRCompatible().then(() => {
+        this.xrButton.setSession(session);
+        session.isImmersive = true;
+        this.onSessionStarted(session);
+      });
     });
   }
 
@@ -144,12 +147,32 @@ export class WebXRSampleApp {
     }
 
     this.onInitRenderer();
+    const gl = this.gl;
 
     this.scene.inputRenderer.useProfileControllerMeshes(session);
 
-    session.updateRenderState({
-      baseLayer: this.onCreateXRLayer(session)
-    });
+    if (session.isImmersive && this.options.useMultiview) {
+      this.renderer = new Renderer(gl, true, true);
+      this.scene.setRenderer(this.renderer);
+
+      let xrGLFactory = new XRWebGLBinding(session, gl);
+      let layer = xrGLFactory.createProjectionLayer({
+        textureType: "texture-array",
+        depthFormat: gl.DEPTH_COMPONENT24,
+        useDepthSorting: true,
+      });
+      session.updateRenderState({ layers: [layer] });
+
+      if (session.supportedFrameRates && session.supportedFrameRates.length) {
+        session.updateTargetFrameRate(session.supportedFrameRates[session.supportedFrameRates.length-1]);
+      }
+    } else {
+      this.renderer = new Renderer(gl);
+      this.scene.setRenderer(this.renderer);
+      session.updateRenderState({
+        baseLayer: this.onCreateXRLayer(session)
+      });
+    }
 
     this.onRequestReferenceSpace(session).then((refSpace) => {
       if (session.isImmersive) {
@@ -178,6 +201,8 @@ export class WebXRSampleApp {
     if (session == this.xrButton.session) {
       this.xrButton.setSession(null);
     }
+    this.renderer = new Renderer(this.gl);
+    this.scene.setRenderer(this.renderer);
   }
 
   // Override to customize frame handling

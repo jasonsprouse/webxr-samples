@@ -44,6 +44,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
         controllers or menu systems/other UI elements.
         <a class="back" href="./index.html">Back</a>
       </p>
+      <input type="checkbox" id="texture-array">Use Texture Array</input>
     </details>
   </header>
   <main style='text-align: center;'>
@@ -65,6 +66,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     }
 
     // XR globals.
+    let textureArrayCheck = document.getElementById('texture-array');
     let xrButton = null;
     let xrSession = null;
     let xrRefSpace = null;
@@ -80,6 +82,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
     // Layer globals
     let proj_layer = null;
+    let usingTextureArray = false;
 
     function initXR() {
       xrButton = new WebXRButton({
@@ -97,9 +100,9 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
     function onRequestSession() {
       if (!xrSession) {
-        navigator.xr.requestSession('immersive-vr', {
-          requiredFeatures: ['layers'],
-        }).then(onSessionStarted);
+        // Unlike all other layer types, use of a single projection layer does
+        // not require the 'layers' feature.
+        navigator.xr.requestSession('immersive-vr').then(onSessionStarted);
       } else {
         onEndSession();
       }
@@ -130,6 +133,10 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     function onSessionStarted(session) {
       xrSession = session;
 
+      // This informs the 'Enter XR' button that the session has started and
+      // that it should display 'Exit XR' instead.
+      xrButton.setSession(session);
+
       // Render correct controller models if supported by WebXR input profile
       scene.inputRenderer.useProfileControllerMeshes(session);
 
@@ -144,7 +151,12 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
       session.requestReferenceSpace('local').then((refSpace) => {
         xrRefSpace = refSpace;
-        proj_layer = xrGLFactory.createProjectionLayer({ space: refSpace, stencil: false });
+        usingTextureArray = textureArrayCheck.checked;
+        proj_layer = xrGLFactory.createProjectionLayer({
+          textureType: usingTextureArray ? 'texture-array' : 'texture',
+          space: refSpace, stencil: false });
+        // Add a custom attribute to the layer.
+        proj_layer.usingTextureArray = usingTextureArray;
         session.updateRenderState({ layers: [proj_layer] });
 
         session.requestAnimationFrame(onXRFrame);
@@ -156,9 +168,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     }
 
     function onSessionEnded(event) {
-      if (event.session.isImmersive) {
-        xrButton.setSession(null);
-      }
+      xrButton.setSession(null);
       xrSession = null;
 
       // In this simple case discard the WebGL context too, since we're not
@@ -170,38 +180,8 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       let pose = frame.getViewerPose(xrRefSpace);
       xrSession.requestAnimationFrame(onXRFrame);
 
-      if (pose) {
-        gl.bindFramebuffer(gl.FRAMEBUFFER, xrFramebuffer);
-
-        // process input and update input sources every frame
-        scene.updateInputSources(frame, xrRefSpace);
-
-        let views = [];
-        for (let view of pose.views) {
-          let viewport = null;
-          let glLayer = xrGLFactory.getViewSubImage(proj_layer, view);
-          glLayer.framebuffer = xrFramebuffer;
-          viewport = glLayer.viewport;
-          gl.bindFramebuffer(gl.FRAMEBUFFER, xrFramebuffer);
-          gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, glLayer.colorTexture, 0);
-          gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.TEXTURE_2D, glLayer.depthStencilTexture, 0);
-
-          gl.enable(gl.SCISSOR_TEST);
-          gl.scissor(viewport.x, viewport.y, viewport.width, viewport.height);
-          gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-          gl.disable(gl.SCISSOR_TEST);
-
-          // Gather all the values needed for one view and push it into the
-          // array of views to be drawn. WebXRView is a utility class that
-          // holds all the necessary values for drawing a single view.
-
-          // In future samples we'll hide this part away as well by using the
-          // scene.drawXRViews() function, which handles gathering these
-          // values internally.
-          views.push(new WebXRView(view, glLayer, viewport));
-        }
-        scene.drawViewArray(views);
-      }
+      scene.drawXRFrame(frame, pose);
+      
       scene.endFrame();
     }
 

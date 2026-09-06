@@ -97,6 +97,7 @@
       <div id='nav'>
         <a href='../'>Samples</a>
         <a href='./' class='selected'>Layers Samples</a>
+        <a href='../webgpu/'>WebGPU Samples</a>
         <a href='../proposals/'>Proposals</a>
         <a href='../tests/'>Test Pages</a>
         <a href='../report/'>Report</a>
@@ -150,14 +151,21 @@
             noPolyfill: true
           },
 
-          
+
           {
             title: 'Media Layer', category: 'Basics',
             path: 'media-layer-sample.html',
             description: 'Demonstrates using an equirect media layer for video playback.',
             noPolyfill: true
           },
-          
+
+          {
+            title: 'Destroy Layer', category: 'Lifecycle',
+            path: 'destroy-layer.html',
+            description: 'Tests destroying a composition layer, invalidating its resources, and removing it from the render state.',
+            noPolyfill: true
+          },
+
           {
             title: 'Equirect Video', category: 'Multi-layer',
             path: 'eqrt-video.html',
@@ -178,7 +186,7 @@
             description: 'Demonstrates a work-around to implement hit test on layers by placing transparent placeholders for each quad layer in the projection layer.',
             noPolyfill: true
           },
-          
+
 
           {
             title: 'Projection Layer with Multiview', category: 'Multiview',
@@ -191,6 +199,13 @@
             title: 'Projection Layer with occlusion', category: 'Multiview',
             path: 'proj-multiview-occlusion.html',
             description: 'Demonstrates a technique to occlude the scene with real wold pixels.',
+            noPolyfill: true
+          },
+
+          {
+            title: 'Input Selection Space Warp', category: 'Space Warp',
+            path: 'input-selection-spacewarp.html',
+            description: 'Demonstrates input selection with a projection layer, Space Warp, motion vectors, and depth.',
             noPolyfill: true
           },
 
@@ -232,7 +247,7 @@
           links.classList.add('links');
 
           let sourceLink = document.createElement('a');
-          sourceLink.href = 'https://github.com/immersive-web/webxr-samples/blob/master/layers-samples/' + page.path;
+          sourceLink.href = 'https://github.com/immersive-web/webxr-samples/blob/main/layers-samples/' + page.path;
           sourceLink.textContent = 'Source';
           links.appendChild(sourceLink);
 

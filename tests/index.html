@@ -91,6 +91,7 @@
         <div id='nav'>
             <a href='../'>Samples</a>
             <a href='../layers-samples/'>Layers Samples</a>
+            <a href='../webgpu/'>WebGPU Samples</a>
             <a href='../proposals/'>Proposals</a>
             <a href='./' class='selected'>Test Pages</a>
             <a href='../report/'>Report</a>
@@ -154,6 +155,10 @@
             { title: 'Exit Button', category: 'Tasty Burritos',
               path: 'exit-button.html',
               description: 'A scene with an in-world exit button.' },
+
+            { title: 'Bounded Floor', category: 'Fried Chicken',
+              path: 'show-boundary.html',
+              description: 'A scene that shows the boundary.' },
           ];
 
           let mainElement = document.getElementById("main");
@@ -185,7 +190,7 @@
             links.classList.add('links');
 
             let sourceLink = document.createElement('a');
-            sourceLink.href = 'https://github.com/immersive-web/webxr-samples/blob/master/tests/' + page.path;
+            sourceLink.href = 'https://github.com/immersive-web/webxr-samples/blob/main/tests/' + page.path;
             sourceLink.textContent = 'Source';
             links.appendChild(sourceLink);
 
